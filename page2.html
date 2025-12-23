@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Commande drone - Confirmation</title>
+</head>
+<body>
+  <h1>Confirmation de la commande</h1>
+
+  <p>Adresse : <span id="adresse"></span></p>
+  <p>Objet : <span id="objet"></span></p>
+
+  <p>Distance restante : <span id="distance">...</span> km</p>
+  <p>Temps restant : <span id="temps">...</span> min</p>
+  <p>Status : <span id="status">en attente...</span></p>
+
+  <button onclick="continuer()">Continuer la livraison</button>
+  <button onclick="annuler()">Annuler la commande</button>
+
+  <script>
+    const API_BASE = "http://192.168.106.188:5000"; // PC central
+
+    function chargerInfosLocales() {
+      const adresse = localStorage.getItem("adresse");
+      const objet   = localStorage.getItem("objet");
+
+      document.getElementById("adresse").textContent = adresse || "";
+      document.getElementById("objet").textContent   = objet || "";
+    }
+
+    function majInfosTempsReel() {
+      fetch(API_BASE + "/info")
+        .then(r => r.json())
+        .then(data => {
+          console.log("DATA /info =", data);
+
+          if (!data.ok) {
+            document.getElementById("status").textContent =
+              data.message || "Pas de mission en cours";
+            return;
+          }
+
+          document.getElementById("distance").textContent = data.distance_km;
+          document.getElementById("temps").textContent    = data.temps_min;
+          document.getElementById("status").textContent   = data.status;
+        })
+        .catch(err => {
+          document.getElementById("status").textContent =
+            "Erreur de connexion au serveur";
+        });
+    }
+
+    function envoyerCommande(action) {
+      fetch(API_BASE + "/commande", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: action })
+      })
+        .then(r => r.json())
+        .then(data => {
+          alert(data.message || "Commande envoyée");
+        })
+        .catch(err => {
+          alert("Erreur lors de l'envoi de la commande");
+        });
+    }
+
+    function continuer() {
+      envoyerCommande("continuer");
+    }
+
+    function annuler() {
+      envoyerCommande("annuler");
+    }
+
+    chargerInfosLocales();
+    majInfosTempsReel();
+    setInterval(majInfosTempsReel, 2000);
+  </script>
+</body>
+</html>

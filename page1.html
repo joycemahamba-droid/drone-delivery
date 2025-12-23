@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Commande drone - Formulaire</title>
+</head>
+<body>
+  <h1>Nouvelle commande</h1>
+
+  <form onsubmit="envoyer(event)">
+    <label>
+      Adresse :
+      <input type="text" id="adresse" required>
+    </label>
+    <br><br>
+    <label>
+      Objet :
+      <input type="text" id="objet" required>
+    </label>
+    <br><br>
+    <button type="submit">Valider</button>
+  </form>
+
+  <script>
+    const API_BASE = "http://192.168.106.188:5000"; // PC central
+
+    function envoyer(e) {
+      e.preventDefault();
+
+      const adresse = document.getElementById("adresse").value.trim();
+      const objet   = document.getElementById("objet").value.trim();
+
+      if (!adresse || !objet) {
+        alert("Veuillez remplir tous les champs.");
+        return;
+      }
+
+      // garder pour l'affichage local sur page2
+      localStorage.setItem("adresse", adresse);
+      localStorage.setItem("objet", objet);
+
+      // envoyer la demande au central
+      fetch(API_BASE + "/demande_livraison", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adresse: adresse, article: objet })
+      })
+      .then(r => r.json())
+      .then(data => {
+        alert(data.message || "");
+
+        if (data.status === "accepte") {
+          // adresse conforme au règlement -> on passe à la page de suivi
+          window.location.href = "page2.html";
+        } else {
+          // refusée : l'utilisateur reste sur cette page pour corriger
+          console.log("Demande refusée:", data);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Erreur de communication avec le centre.");
+      });
+    }
+  </script>
+</body>
+</html>
